@@ -1,3 +1,4 @@
+#!/bin/sh
 syncroot=/c/@/sync
 
 for fork in `ls $syncroot`

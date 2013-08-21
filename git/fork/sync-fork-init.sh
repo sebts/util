@@ -1,7 +1,7 @@
 #!/bin/sh
-fork=$1   #git address for your fork repo
-parent=$2 #git address for parent repo
-tree=$3   #local directory for clone
+tree=$1   #local working tree for repo
+fork=$2   #git url for your fork repo
+parent=$3 #git url for parent repo
 
 echo "# Clone $fork into $tree"
 git clone -n $fork $tree
