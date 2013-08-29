@@ -1,84 +1,169 @@
 #!/bin/bash
 
-#USAGE
+s=		# source branch name
+r=		# source remote name
+u=		# source repo url
+d=		# destination branch name
+e=		# destination remote name
+o=		# destination repo url
+t=		# working tree
+
 usage()
 {
 cat << EOF
-usage: $0 options
 
-This script will merge two branches within an existing repository.
+usage: $0 $*
+This script will merge branches within or across repositories.
 
-OPTIONS:
-  merge.sh -s <remote>/<branch> -d <remote>/<branch> [-t /path/to/tree]
+OPTIONS:    
+  Fork mode: 
+    given a source remote and destination remote, 
+    will fast-forward the entire fork repository.
+  git-merge.sh -t <path> -r <remote> [[-u <url>]] -e <remote> [[-o <url>]]
   
-  -s Sets the source branch for the merge.	 
-  -d Sets the destination branch for the merge. 	 
-  -t Sets the work tree for the local repository. Default: PWD.
+  Merge mode: 
+    given a source branch and destination branch, 
+    will merge one branch to another.  
+  git-merge.sh -t <path> -s <branch> [[-r <remote>]] [[-u <url>]] 
+               -d <branch> [[-e <remote>]] [[-o <url>]] 
+  
+  -s Sets the source branch name.
+  -r Sets the source remote name.
+  -u Sets the source repository url.
+  -d Sets the destination branch name.
+  -e Sets the destination remote name.  
+  -o Sets the destination repository url.
+  -t Sets the work tree.
   -? Show this message
 EOF
 }
 
-s=
-sb=
-sr=
-d=
-db=
-dr=
-t=
+# separates out remote and branch. 
+# assumes "<remote>/<branch>" or "<branch>" format.
+# $1 IN.  original argument.
+# $2 OUT. returned original argument.
+# $2 OUT. returned split remote.
+# $3 OUT. returned split branch.
+get-remote-branch() 
+{
+	eval "$2='$1'" # set original arg
+	local split=(${1//\// })
+	if [[ -n ${split[[1]]} ]]
+	then
+		eval "$3='${split[[0]]}'"
+		eval "$4='${split[[1]]}'"
+	else
+		eval "$3="
+		eval "$4='${split[[0]]}'"
+	fi
+}
 
-#ARGS
-while getopts "s:d:t:?" OPTION
+# adds or set url for a remote
+# $1 IN.  name of remote
+# $2 IN.  url for repository
+set-remote() 
+{
+	if [[ -n $1 ]] && [[ -n $2 ]]
+	then
+		if [[ "`git remote`" == *"$1"* ]]
+		then	
+			echo # Force remote $1 to $2
+			git remote set-url $1 $2
+		else
+			echo # Add remote $1 to $2
+			git remote add $1 $2
+		fi
+	fi	
+}
+
+# merges a given remote/branch into another remote/branch
+# $1 IN. name of source remote.
+# $2 IN. name of source branch.
+# $3 IN. name of destination remote.
+# $4 IN. name of destination branch.
+merge-branches()
+{
+	local remote=`git branch -r | grep "$3/$4" | grep -v HEAD `
+	local exists=
+	if [[ "$remote" == "  $3/$4" ]] # git branch -r prints leading spaces
+	then # checkout destination branch because it exists	
+		echo "# Checkout clean $3/$4"
+		git checkout --force -B $4 --track $3/$4
+		exists="true"
+	else # checkout source branch because destination does not exist	
+		echo "# Checkout clean $1/$2"
+		git checkout --force -B $2 --track $1/$2
+	fi	
+	git clean -dff
+	git pull
+	
+	if [[ $exists ]]
+	then
+		echo "# Merge from $1/$2"
+		git pull $1 $2
+	fi
+	
+	echo "# Push to $3/$4"
+	git push -n --tags --recurse-submodules=on-demand $3 HEAD:$4
+}
+
+# begin arguments
+while getopts "s:r:u:d:e:o:t:?" OPTION
 do
 	case $OPTION in
-		s)	
-			s=$OPTARG
-			args=(${s//\// })
-			if [[ -n ${args[1]} ]]
-			then
-				sr=${args[0]}
-				sb=${args[1]}
-			else
-				sb=$s
-			fi
-			;;
-		d)
-			d=$OPTARG
-			args=(${d//\// })
-			if [[ -n ${args[1]} ]]
-			then
-				dr=${args[0]}
-				db=${args[1]}
-			else
-				sb=$s
-			fi
-			;;
-		t)
-			t=$OPTARG
-			;;
-		?)
-			usage
-			exit
-			;;
+		s) s=$OPTARG ;;
+		r) r=$OPTARG ;;
+		u) u=$OPTARG ;;
+		d) d=$OPTARG ;;
+		e) e=$OPTARG ;;
+		o) o=$OPTARG ;;
+		t) t=$OPTARG ;;
+		?) usage ; exit ;;
 	 esac
 done
 
-if [[ -z $t ]]
+if [[ -z $t ]] || (([[ -z $s ]] || [[ -z $d ]]) && (([[ -z $r ]] || [[ -z $e ]]) && ([[ -z $u ]] || [[ -z $o ]])))
 then
-	t=$PWD
+	usage ; exit 1	
 fi
-
-if [[ -z $sr ]] || [[ -z $sb ]] || [[ -z $dr ]] || [[ -z $db ]] || [[ -z $t ]]
+if [[ -z $e ]]
+then 
+	e="origin"
+fi
+if [[ -z $r ]]
 then
-	usage
-	exit 1
+	if [[ -n $u ]]
+	then r="upstream"
+	else r="origin"
+	fi
 fi
+if [[ -n $s ]] && [[ -z $d ]]
+then 
+	d=$s
+fi
+# end arguments
 
-#MERGE
+# begin repo init
+git init $t
+
+calldir=$PWD
 cd $t
-echo "# Checkout $s to $t"
-git checkout --force -B $sb --track $s
-git pull --ff-only $sr $sb
-echo "# Merge from $d"
-git pull $dr $db
-echo "# Push to $d"
-git push -n $dr $db --tags
+set-remote $r $u
+set-remote $e $o
+# end repo init
+
+if [[ -z $s ]] || [[ -z $d ]]
+then # fork mode
+	echo "# Fetch all remotes"
+	git fetch --all --prune --recurse-submodules
+	echo "# Fast-forward fork from $r to $e"
+	for remote in `git branch -r | grep $r | grep -v HEAD `
+		do
+		branch=${remote/$r\//}
+		merge-branches $r $branch $e $branch
+	done
+else # merge mode
+	merge-branches $r $s $e $d
+fi
+
+cd $calldir
