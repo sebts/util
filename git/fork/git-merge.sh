@@ -38,26 +38,6 @@ OPTIONS:
 EOF
 }
 
-# separates out remote and branch. 
-# assumes "<remote>/<branch>" or "<branch>" format.
-# $1 IN.  original argument.
-# $2 OUT. returned original argument.
-# $2 OUT. returned split remote.
-# $3 OUT. returned split branch.
-get-remote-branch() 
-{
-	eval "$2='$1'" # set original arg
-	local split=(${1//\// })
-	if [[ -n ${split[[1]]} ]]
-	then
-		eval "$3='${split[[0]]}'"
-		eval "$4='${split[[1]]}'"
-	else
-		eval "$3="
-		eval "$4='${split[[0]]}'"
-	fi
-}
-
 # adds or set url for a remote
 # $1 IN.  name of remote
 # $2 IN.  url for repository
@@ -65,7 +45,8 @@ set-remote()
 {
 	if [[ -n $1 ]] && [[ -n $2 ]]
 	then
-		if [[ "`git remote`" == *"$1"* ]]
+		local remote=`git remote | grep "$1" `
+		if [[ "$remote" == "$1" ]]
 		then	
 			echo # Force remote $1 to $2
 			git remote set-url $1 $2
