@@ -27,10 +27,10 @@ OPTIONS:
   git-merge.sh -t <path> -s <branch> [[-r <remote>]] [[-u <url>]] 
                -d <branch> [[-e <remote>]] [[-o <url>]] 
   
-  -s Sets the source branch name.
+  -s Sets the source branch name. Accepts a space delimited list.
   -r Sets the source remote name.
   -u Sets the source repository url.
-  -d Sets the destination branch name.
+  -d Sets the destination branch name. Accepts a space delimited list.
   -e Sets the destination remote name.  
   -o Sets the destination repository url.
   -t Sets the work tree.
@@ -59,33 +59,45 @@ set-remote()
 
 # merges a given remote/branch into another remote/branch
 # $1 IN. name of source remote.
-# $2 IN. name of source branch.
+# $2 IN. name of source branch. Accepts space delimited list.
 # $3 IN. name of destination remote.
-# $4 IN. name of destination branch.
+# $4 IN. name of destination branch. Accepts space delimited list.
 merge-branches()
 {
-	local remote=`git branch -r | grep "$3/$4" | grep -v HEAD `
-	local exists=
-	if [[ "$remote" == "  $3/$4" ]] # git branch -r prints leading spaces
-	then # checkout destination branch because it exists	
-		echo "# Checkout clean $3/$4"
-		git checkout --force -B $4 --track $3/$4
-		exists="true"
-	else # checkout source branch because destination does not exist	
-		echo "# Checkout clean $1/$2"
-		git checkout --force -B $2 --track $1/$2
-	fi	
-	git clean -dff
-	git pull
+	local sr="$1"
+	local sb=($2)
+	local dr="$3"
+	local db=($4)
 	
-	if [[ $exists ]]
-	then
-		echo "# Merge from $1/$2"
-		git pull $1 $2
-	fi
+	for i in "${!sb[@]}"
+	do	
+		if [[ ! ${db[i]} ]] # if no destination branch, use source branch
+			then db[i]=${sb[i]}
+		fi
+		
+		local exists=
+		if [[ `git branch -r | grep "$dr/${db[i]}" | grep -v HEAD ` == "  $dr/${db[i]}" ]] # git branch -r prints leading spaces.
+		then # checkout destination branch because it exists
+			echo "# Checkout clean $dr/${db[i]}"
+			git checkout --force -B ${db[i]} --track "$dr/${db[i]}"
+			exists="true"
+		else # checkout source branch because destination does not exist	
+			echo "# Checkout clean $sr/${sb[i]}"
+			git checkout --force -B ${sb[i]} --track "$sr/${sb[i]}"
+		fi
+		
+		git clean -dff
+		git pull
 	
-	echo "# Push to $3/$4"
-	git push -n --tags --recurse-submodules=on-demand $3 HEAD:$4
+		if [[ $exists ]]
+		then
+			echo "# Merge from $sr/${sb[i]}"
+			git pull $sr ${sb[i]}
+		fi
+
+		echo "# Push to $dr/${db[i]}"
+		git push --tags --recurse-submodules=on-demand $dr HEAD:${db[i]}
+	done
 }
 
 # begin arguments
@@ -131,20 +143,18 @@ calldir=$PWD
 cd $t
 set-remote $r $u
 set-remote $e $o
+
+echo "# Fetch all remotes"
+git fetch --all --prune --recurse-submodules
 # end repo init
 
-if [[ -z $s ]] || [[ -z $d ]]
+if [[ -z $s ]]
 then # fork mode
-	echo "# Fetch all remotes"
-	git fetch --all --prune --recurse-submodules
 	echo "# Fast-forward fork from $r to $e"
-	for remote in `git branch -r | grep $r | grep -v HEAD `
-		do
-		branch=${remote/$r\//}
-		merge-branches $r $branch $e $branch
-	done
-else # merge mode
-	merge-branches $r $s $e $d
+	branches=`git branch -r | grep $r | grep -v HEAD `
+	s=${branches//  $r\// }
 fi
+
+merge-branches $r "$s" $e "$d"
 
 cd $calldir

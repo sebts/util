@@ -29,14 +29,17 @@ git-merge.sh	-t $t/moodle-mod_turnitintool \
 # moodle-mod_questionnaire
 git-merge.sh 	-t $t/moodle-mod_questionnaire \
 				-u https://github.com/remotelearner/moodle-mod_questionnaire.git \
+				-s "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE" \
 				-o https://github.com/sebts/moodle-mod_questionnaire.git 
 
 git-merge.sh	-t $t/moodle-mod_questionnaire \
 				-s MOODLE_23_STABLE \
 				-d SEBTS_23
+
 # moodle
 git-merge.sh	-t $t/moodle \
 				-u https://github.com/moodle/moodle.git	\
+				-s "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE" \
 				-o https://github.com/sebts/moodle.git
 
 git-merge.sh	-t $t/moodle \
