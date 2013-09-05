@@ -1,5 +1,5 @@
 #!/bin/sh
-t=/c/@/sync
+t=~/sync-moodle
 
 while getopts "t:" OPTION
 do
@@ -14,7 +14,7 @@ git-merge.sh 	-t $t/moodle-theme_zebra \
 				-o https://github.com/sebts/moodle-theme_zebra.git
 
 git-merge.sh	-t $t/moodle-theme_zebra \
-				-s master \
+				-b master \
 				-d SEBTS
 
 # moodle-mod_turnitintool
@@ -23,25 +23,25 @@ git-merge.sh 	-t $t/moodle-mod_turnitintool \
 				-o https://github.com/sebts/moodle-mod_turnitintool.git
 
 git-merge.sh	-t $t/moodle-mod_turnitintool \
-				-s master \
+				-b master \
 				-d release
 				
 # moodle-mod_questionnaire
 git-merge.sh 	-t $t/moodle-mod_questionnaire \
 				-u https://github.com/remotelearner/moodle-mod_questionnaire.git \
-				-s "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE" \
+				-b "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE" \
 				-o https://github.com/sebts/moodle-mod_questionnaire.git 
 
 git-merge.sh	-t $t/moodle-mod_questionnaire \
-				-s MOODLE_23_STABLE \
+				-b MOODLE_23_STABLE \
 				-d SEBTS_23
 
 # moodle
 git-merge.sh	-t $t/moodle \
 				-u https://github.com/moodle/moodle.git	\
-				-s "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE" \
+				-b "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE" \
 				-o https://github.com/sebts/moodle.git
 
 git-merge.sh	-t $t/moodle \
-				-s MOODLE_23_STABLE \
+				-b MOODLE_23_STABLE \
 				-d SEBTS_23
