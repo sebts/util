@@ -71,10 +71,10 @@ then
 fi
 # end arguments
 
-calldir=$PWD
+calldir="$PWD"
 
 init-repository "$t" "$r $u" "$e $o"
 
 merge-branches $r "$b" $e "$d"
 
-cd $calldir
+cd "$calldir"

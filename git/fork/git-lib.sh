@@ -12,7 +12,7 @@ init-remote()
 	then # $remote is set
 		if [[ -n $url ]]
 		then # $url is set
-			if [[ `git remote | grep "$remote" ` == "$remote" ]]
+			if [[ $(git remote | grep "$remote") == "$remote" ]]
 			then # remote already set. update url.
 				echo "# Force remote $remote to $url"
 				git remote set-url $remote $url
@@ -32,62 +32,58 @@ init-repository()
 {
 	local t=$1
 	
-	git init $t
-	cd $t
-	
-	local remotes=	
-	local remote=
+	git init "$t"
+	cd "$t"
 	
 	shift
 	while [[ $# > 0 ]]
 	do
 		local split=($1)
 		init-remote ${split[0]} ${split[1]}
-		remotes+=" ${split[0]}"
 		shift
 	done
-		
-	remotes=$(echo "$remotes" | tr ' ' '\n' | sort -u | tr '\n' ' ') # get unique remotes
-	for remote in $remotes
-	do
-		echo "# Fetch $remote"	
-		git fetch $remote --prune --recurse-submodules
-	done
 }
 
-# returns array of branches including a given search term
-# $1 IN.  grep search term
-# $2 OUT. returned branch array
-search-branches()
+# returns 0 if exact branch matches
+# $1 IN.  remote name.
+# $2 IN.  branch name.
+# $3 IN.  boolean. exit on failure. optional. 0 is true
+remote-branch-exists()
 {
-	local search=$1
+	git ls-remote --heads --exit-code $1 $2 > /dev/null # hide console output
 	
-	# get remote branches match remote name, excluding HEAD
-	local result=`git branch -r | grep -s -e "$search" | grep -v HEAD `
-	
-	# return an array of branches
-	eval "$2=(${result})"
+	if [[ $? != 0 ]]
+	then # does not exist
+		if [[ $3 == 0 || $3 == true ]]
+		then # exit on failure
+			echo "ERROR: git-lib/remote-branch-exists(). $remote/$branch does not exist in $PWD. Exiting."
+			exit 101
+		else
+			return 1
+		fi
+	else
+		return 0
+	fi
 }
 
-# returns true if exact branch matches 
-# $1 IN.  full branch name
-branch-exists()
+# $1 IN.  remote name.
+# $2 OUT. branch list array. only includes branch name, not remote name.
+get-remote-branches()
 {
-	local search=$1
+	local list=($(git ls-remote --heads $1))
 	local branches=
-	local branch=
-	search-branches $search branches
 	
-	for branch in "${branches[@]}"
+	for i in "${!list[@]}" # for loop based on length of source branch array
 	do
-		if [[ $search == $branch ]]
-			then return 0
+		if [[ $(expr $i % 2) == 1 ]] # sha1 hash is even element. branch name is odd.
+		then	
+			branches[$[(i-1)/2]]=${list[$i]//refs\/heads\//} # remove preceding refs/heads/
 		fi
 	done
-	return 1	
+	eval "$2=(${branches[@]})"
 }
 
-# checkout a branch with tracking remote, clean and pull.
+# fetch and checkout a clean branch with tracking remote.
 # $1 IN.  remote name
 # $2 IN.  branch name
 clean-checkout()
@@ -95,17 +91,10 @@ clean-checkout()
 	local remote=$1
 	local branch=$2
 	
-	branch-exists $remote/$branch
-	if [[ $? != 0 ]]
-	then 
-		echo "ERROR: git-lib/clean-checkout(). $remote/$branch does not exist and cannot be checked out!"
-		exit 101
-	fi
-	
-	echo "# Checkout clean $remote/$branch"
+	echo "# Checkout clean $remote/$branch"	
+	remote-branch-exists $remote $branch true # exits if DNE
+	git fetch $remote $branch:remotes/$remote/$branch
 	git checkout --force -B $branch --track $remote/$branch
-	git clean -dff
-	git pull
 }
 
 # $1 IN/OUT. branch name, in <remote>/<branch> or <branch> format.
@@ -141,13 +130,15 @@ merge-branch()
 		then db=$sb
 	fi
 	
-	branch-exists "$dr/$db"
+	remote-branch-exists $sr $sb true # exits if source DNE
+	
+	remote-branch-exists $dr $db
 	if [[ $? == 0 ]]
-	then # destination branch exists
+	then # destination exists. checkout destination.
 		clean-checkout $dr $db
 		echo "# Merge from $sr/$sb"
 		git pull $sr $sb
-	else # destination branch does not exist
+	else # destination branch does not exist. checkout source
 		clean-checkout $sr $sb
 	fi
 
@@ -168,9 +159,9 @@ merge-branches()
 	local db=($4)
 
 	if [[ -z $sb ]]
-	then # no branches set. fork mode.
+	then # no branches set. fork mode.		
 		echo "# Fast-forward fork from $sr to $dr"
-		search-branches $sr sb #set sb to all branches for the source remote
+		get-remote-branches $sr sb
 		db= # no destination branches should be set for fork mode
 	fi
 
