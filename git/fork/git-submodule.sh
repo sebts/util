@@ -1,43 +1,54 @@
-#!/bin/sh
+#!/bin/bash
+source git-lib.sh
 
-t= #local tree directory
-r= #remote
-b= #branch
-i= #initialize flag
+t=			#superproject tree directory
+u=			#superproject git url
+r="origin"	#superproject remote
+b=			#superproject branch
+
+usage()
+{
+cat << EOF
+
+usage: $0 $*
+This script will update a submodule within a repository
+
+OPTIONS:
+  Initialization mode: pass in params for the super-repository
+  git-submodule.sh -i -t <path> -b <branch> [-u <giturl>] [-r <remote> ] 
+  
+  Submodule mode: pass in params for the submodule
+  git-submodule.sh -t <path> -p <relpath> -b <branch> [-u <giturl>] [-r <remote> ]
+  
+  -t Sets the work tree.
+  -b Sets the branch name.
+  -u Optional. Sets the repository url.
+  -r Optional. Sets the remote name. Default: origin.
+EOF
+}
 
 # begin arguments
-while getopts "t:r:b:i?" OPTION
+while getopts "t:u:r:b:?" OPTION
 do
 	case $OPTION in
 		t) t=$OPTARG ;;
+		u) u=$OPTARG ;;
 		r) r=$OPTARG ;;
 		b) b=$OPTARG ;;
-		i) i="true" ;;
 		?) usage ; exit ;;
 	 esac
 done
 
-#super-tree
-#super-remote
-#super-branch
-#if we assume that we are already on the right superbranch, then the above are not necessary. This would greatly reduce the params.
-#sub-tree
-#sub-remote?
-#sub-branch
-#
+if [[ -z $t ]] || [[ -z $b ]] || [[ -z $r ]]
+then
+	usage ; exit 1;
+fi
+# end arguments
 
-#cd $t
-#git checkout --force -B ${branch} --track "${remote}/${branch}"
-#git clean -dff
-#git pull
-#git submodule sync
-#git submodule update --init --recursive
-#cd $sub
-#git checkout --force -B ${sub-branch} --track origin/${sub-branch}
-#git clean -dff
-#git pull
-#show=`git show --oneline `
-#cd $t
-#git add $sub
-#git commit -m "Updating $sub to $show"
-#git push
+calldir="$PWD"
+
+init-repository "$t" "$r $u"
+clean-checkout $r $b
+update-submodules
+
+cd "$calldir"

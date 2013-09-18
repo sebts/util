@@ -95,6 +95,8 @@ clean-checkout()
 	remote-branch-exists $remote $branch true # exits if DNE
 	git fetch $remote $branch:remotes/$remote/$branch
 	git checkout --force -B $branch --track $remote/$branch
+	git clean -dff
+	git reset --hard
 }
 
 # $1 IN/OUT. branch name, in <remote>/<branch> or <branch> format.
@@ -143,7 +145,7 @@ merge-branch()
 	fi
 
 	echo "# Push to $dr/$db"
-	git push --tags --recurse-submodules=on-demand $dr HEAD:$db
+	git push --tags --recurse-submodules=check $dr HEAD:$db
 }
 
 # loops through multiple branch merges merging source[i] into destination[i]
@@ -169,4 +171,29 @@ merge-branches()
 	do
 		merge-branch $sr ${sb[i]} $dr ${db[i]}
 	done
+}
+
+# updates submodules for the current superproject.
+# Assumes superproject is already up-to-date
+update-submodules()
+{
+	local t="$PWD"
+	git submodule sync
+	git submodule update --init --remote --force
+	
+	# uncouth, but works.
+	git submodule foreach '
+		parse=(${path//\// })
+		for i in "${!parse[@]}"
+		do # backup until we get to the superproject.
+			cd ..
+		done
+		git diff --quiet --exit-code $path
+		if [[ $? == 1 ]]
+		then			
+			git add $path
+			git commit -m "Updating $name to $sha1"
+		fi
+	'
+	git push
 }

@@ -45,3 +45,6 @@ git-merge.sh	-t $t/moodle \
 git-merge.sh	-t $t/moodle \
 				-b MOODLE_23_STABLE \
 				-d SEBTS_23
+				
+git-submodule.sh	-t $t/moodle \
+					-b SEBTS_23
