@@ -1,5 +1,5 @@
 #!/bin/bash
-source git-lib.sh
+source gitlib
 
 t=			#superproject tree directory
 u=			#superproject git url

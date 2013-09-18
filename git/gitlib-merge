@@ -1,5 +1,5 @@
 #!/bin/bash
-source git-lib.sh
+source gitlib
 
 b=		# source branch names
 r=		# source remote name
