@@ -1,0 +1,66 @@
+#!/bin/bash
+source gitlib
+
+t=            #git working tree. also the production directory
+d=            #git repository directory.
+u=            #repository url
+r=origin      #remote name
+b=            #branch name 
+
+usage()
+{
+cat << EOF
+
+usage: $0 $*
+This script will update a working tree, e.g, production, to a given branch
+
+OPTIONS:
+  
+  gitlib-update -t <path> -d <path> -b <branch> [-u <url>] [-r <remote>]
+
+  -t Sets the work tree, e.g., production directory
+  -d Sets the git directory
+  -b Sets the branch name.
+  -u Optional. Sets the repository url.
+  -r Optional. Sets the remote name. Default: origin.
+EOF
+}
+
+# begin arguments
+while getopts "t:d:u:r:b:?" OPTION
+do
+    case $OPTION in
+        t) t=$OPTARG ;;
+        d) d=$OPTARG ;;
+        u) u=$OPTARG ;;
+        r) r=$OPTARG ;;
+        b) b=$OPTARG ;;
+        ?) usage ; exit ;;
+     esac
+done
+
+if [[ -z $t ]] || [[ -z $d ]] || [[ -z $r ]] || [[ -z $b ]]
+then
+    usage ; exit 1;
+fi
+# end arguments
+
+update()
+{
+    init-repository "$t" "$d"
+    init-remote $r $u
+    clean-checkout $r $b true
+}
+
+if  [[ ! -d $d ]] || [[ ! $(ls -A $d) ]]
+then #git dir dne or empty. Initialize directory with git.
+    echo "# Backup original to ${t}~"
+    mv ${t} ${t}~    
+    update    
+    echo "# Copy original on top of git clone in $t"
+    cp -r ${t}~/* ${t}    
+    echo "# Removing original backup"
+    rm -r ${t}~
+fi
+
+update

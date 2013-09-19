@@ -5,43 +5,44 @@
 # $2 IN.  url for repository
 init-remote() 
 {
-	local remote=$1
-	local url=$2
-	
-	if [[ -n $remote ]]
-	then # $remote is set
-		if [[ -n $url ]]
-		then # $url is set
-			if [[ $(git remote | grep "$remote") == "$remote" ]]
-			then # remote already set. update url.
-				echo "# Force remote $remote to $url"
-				git remote set-url $remote $url
-			else  #remote not set. add url.
-				echo "# Add remote $remote to $url"
-				git remote add $remote $url
-			fi
-		fi
-	fi	
+    local remote=$1
+    local url=$2
+    
+    if [[ -n $remote ]]
+    then # $remote is set
+        if [[ -n $url ]]
+        then # $url is set
+            if [[ $(git remote | grep "$remote") == "$remote" ]]
+            then # remote already set. update url.
+                echo "# Force remote $remote to $url"
+                git remote set-url $remote $url
+            else  #remote not set. add url.
+                echo "# Add remote $remote to $url"
+                git remote add $remote $url
+            fi
+        fi
+    fi    
 }
 
-# initializes a repository and sets remotes as specified
-# $1 IN.  work tree for repository
-# $# IN.  <remote> <url>
+# initializes a repository with git directory and work tree
+# $1 IN.  work tree
+# $2 IN.  Optional. separate git directory
 # you can pass in as many <name> <url> pairs as desired.
 init-repository()
 {
-	local t=$1
-	
-	git init "$t"
-	cd "$t"
-	
-	shift
-	while [[ $# > 0 ]]
-	do
-		local split=($1)
-		init-remote ${split[0]} ${split[1]}
-		shift
-	done
+    local t=$1
+    local d=$2
+    
+    if [[ -n $d ]]
+    then
+        echo "Initialize repository $d with work tree $t"
+        git init --separate-git-dir="$d" "$t"
+    else
+        echo "Initialize repository $t"
+        git init "$t"
+    fi
+    
+    cd "$t"
 }
 
 # returns 0 if exact branch matches
@@ -50,53 +51,62 @@ init-repository()
 # $3 IN.  boolean. exit on failure. optional. 0 is true
 remote-branch-exists()
 {
-	git ls-remote --heads --exit-code $1 $2 > /dev/null # hide console output
-	
-	if [[ $? != 0 ]]
-	then # does not exist
-		if [[ $3 == 0 || $3 == true ]]
-		then # exit on failure
-			echo "ERROR: git-lib/remote-branch-exists(). $remote/$branch does not exist in $PWD. Exiting."
-			exit 101
-		else
-			return 1
-		fi
-	else
-		return 0
-	fi
+    git ls-remote --heads --exit-code $1 $2 > /dev/null # hide console output
+    
+    if [[ $? != 0 ]]
+    then # does not exist
+        if [[ $3 == 0 || $3 == true ]]
+        then # exit on failure
+            echo "ERROR: git-lib/remote-branch-exists(). $remote/$branch does not exist in $PWD. Exiting."
+            exit 101
+        else
+            return 1
+        fi
+    else
+        return 0
+    fi
 }
 
 # $1 IN.  remote name.
 # $2 OUT. branch list array. only includes branch name, not remote name.
 get-remote-branches()
 {
-	local list=($(git ls-remote --heads $1))
-	local branches=
-	
-	for i in "${!list[@]}" # for loop based on length of source branch array
-	do
-		if [[ $(expr $i % 2) == 1 ]] # sha1 hash is even element. branch name is odd.
-		then	
-			branches[$[(i-1)/2]]=${list[$i]//refs\/heads\//} # remove preceding refs/heads/
-		fi
-	done
-	eval "$2=(${branches[@]})"
+    local list=($(git ls-remote --heads $1))
+    local branches=
+    
+    for i in "${!list[@]}" # for loop based on length of source branch array
+    do
+        if [[ $(expr $i % 2) == 1 ]] # sha1 hash is even element. branch name is odd.
+        then    
+            branches[$[(i-1)/2]]=${list[$i]//refs\/heads\//} # remove preceding refs/heads/
+        fi
+    done
+    eval "$2=(${branches[@]})"
 }
 
 # fetch and checkout a clean branch with tracking remote.
 # $1 IN.  remote name
 # $2 IN.  branch name
+# $3 IN.  Optional. true to update submodules
 clean-checkout()
 {
-	local remote=$1
-	local branch=$2
-	
-	echo "# Checkout clean $remote/$branch"	
-	remote-branch-exists $remote $branch true # exits if DNE
-	git fetch $remote $branch:remotes/$remote/$branch
-	git checkout --force -B $branch --track $remote/$branch
-	git clean -dff
-	git reset --hard
+    local remote=$1
+    local branch=$2
+    
+    echo "# Checkout clean $remote/$branch"    
+    remote-branch-exists $remote $branch true # exits if DNE
+    git fetch $remote $branch:remotes/$remote/$branch
+    git checkout --force -B $branch --track $remote/$branch    
+    
+    if [[ $3 == true ]]
+    then
+        git submodule sync
+        git submodule update --init --force --recursive
+        git submodule foreach --recursive 'git clean -d --force ; git reset --hard'
+    fi
+    
+    git clean -d --force
+    git reset --hard
 }
 
 # $1 IN/OUT. branch name, in <remote>/<branch> or <branch> format.
@@ -105,12 +115,12 @@ clean-checkout()
 #            returned with parsed <remote>, or unchanged.
 format-branch()
 {
-	local split=(${!1//\// })
-	if [[ ${split[1]} ]]
-	then
-		eval "$2='${split[0]}'"
-		eval "$1='${split[1]}'"
-	fi
+    local split=(${!1//\// })
+    if [[ ${split[1]} ]]
+    then
+        eval "$2='${split[0]}'"
+        eval "$1='${split[1]}'"
+    fi
 }
 
 # merges a single branch to another
@@ -120,32 +130,32 @@ format-branch()
 # $4 IN.  destination branch name
 merge-branch()
 {
-	local sr=$1
-	local sb=$2
-	local dr=$3
-	local db=$4
+    local sr=$1
+    local sb=$2
+    local dr=$3
+    local db=$4
 
-	format-branch sb sr
-	format-branch db dr
-	
-	if [[ ! $db ]] # if no destination branch specified, use source branch
-		then db=$sb
-	fi
-	
-	remote-branch-exists $sr $sb true # exits if source DNE
-	
-	remote-branch-exists $dr $db
-	if [[ $? == 0 ]]
-	then # destination exists. checkout destination.
-		clean-checkout $dr $db
-		echo "# Merge from $sr/$sb"
-		git pull $sr $sb
-	else # destination branch does not exist. checkout source
-		clean-checkout $sr $sb
-	fi
+    format-branch sb sr
+    format-branch db dr
+    
+    if [[ ! $db ]] # if no destination branch specified, use source branch
+        then db=$sb
+    fi
+    
+    remote-branch-exists $sr $sb true # exits if source DNE
+    
+    remote-branch-exists $dr $db
+    if [[ $? == 0 ]]
+    then # destination exists. checkout destination.
+        clean-checkout $dr $db
+        echo "# Merge from $sr/$sb"
+        git pull $sr $sb
+    else # destination branch does not exist. checkout source
+        clean-checkout $sr $sb
+    fi
 
-	echo "# Push to $dr/$db"
-	git push --tags --recurse-submodules=check $dr HEAD:$db
+    echo "# Push to $dr/$db"
+    git push --tags --recurse-submodules=check $dr HEAD:$db
 }
 
 # loops through multiple branch merges merging source[i] into destination[i]
@@ -155,45 +165,45 @@ merge-branch()
 # $4 IN.  destination branch names
 merge-branches()
 {
-	local sr=$1
-	local sb=($2)
-	local dr=$3
-	local db=($4)
+    local sr=$1
+    local sb=($2)
+    local dr=$3
+    local db=($4)
 
-	if [[ -z $sb ]]
-	then # no branches set. fork mode.		
-		echo "# Fast-forward fork from $sr to $dr"
-		get-remote-branches $sr sb
-		db= # no destination branches should be set for fork mode
-	fi
+    if [[ -z $sb ]]
+    then # no branches set. fork mode.        
+        echo "# Fast-forward fork from $sr to $dr"
+        get-remote-branches $sr sb
+        db= # no destination branches should be set for fork mode
+    fi
 
-	for i in "${!sb[@]}" # for loop based on length of source branch array
-	do
-		merge-branch $sr ${sb[i]} $dr ${db[i]}
-	done
+    for i in "${!sb[@]}" # for loop based on length of source branch array
+    do
+        merge-branch $sr ${sb[i]} $dr ${db[i]}
+    done
 }
 
 # updates submodules for the current superproject.
 # Assumes superproject is already up-to-date
 update-submodules()
 {
-	local t="$PWD"
-	git submodule sync
-	git submodule update --init --remote --force
-	
-	# uncouth, but works.
-	git submodule foreach '
-		parse=(${path//\// })
-		for i in "${!parse[@]}"
-		do # backup until we get to the superproject.
-			cd ..
-		done
-		git diff --quiet --exit-code $path
-		if [[ $? == 1 ]]
-		then			
-			git add $path
-			git commit -m "Updating $name to $sha1"
-		fi
-	'
-	git push
+    local t="$PWD"
+    git submodule sync
+    git submodule update --init --remote --force
+    
+    # uncouth, but works.
+    git submodule foreach '
+        parse=(${path//\// })
+        for i in "${!parse[@]}"
+        do # backup until we get to the superproject.
+            cd ..
+        done
+        git diff --quiet --exit-code $path
+        if [[ $? == 1 ]]
+        then            
+            git add $path
+            git commit -m "Updating $name to $sha1"
+        fi
+    '
+    git push
 }

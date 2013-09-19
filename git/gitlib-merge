@@ -1,13 +1,13 @@
 #!/bin/bash
 source gitlib
 
-b=		# source branch names
-r=		# source remote name
-u=		# source repo url
-d=		# destination branch names
-e=		# destination remote name
-o=		# destination repo url
-t=		# working tree
+b=        # source branch names
+r=        # source remote name
+u=        # source repo url
+d=        # destination branch names
+e=        # destination remote name
+o=        # destination repo url
+t=        # working tree
 
 usage()
 {
@@ -20,12 +20,12 @@ OPTIONS:
   Fork mode: 
     given a source remote and destination remote, 
     will fast-forward the entire fork repository.
-  git-merge.sh -t <path> -r <remote> [[-u <url>]] -e <remote> [[-o <url>]]
+  git-merge -t <path> -r <remote> [[-u <url>]] -e <remote> [[-o <url>]]
   
   Merge mode: 
     given a source branch and destination branch, 
     will merge one branch to another.  
-  git-merge.sh -t <path> -b <branch> [[-r <remote>]] [[-u <url>]] 
+  git-merge -t <path> -b <branch> [[-r <remote>]] [[-u <url>]] 
                -d <branch> [[-e <remote>]] [[-o <url>]] 
   
   -b Sets the source branch name. Accepts a space delimited list.
@@ -42,38 +42,40 @@ EOF
 # begin arguments
 while getopts "b:r:u:d:e:o:t:?" OPTION
 do
-	case $OPTION in
-		b) b=$OPTARG ;;
-		r) r=$OPTARG ;;
-		u) u=$OPTARG ;;
-		d) d=$OPTARG ;;
-		e) e=$OPTARG ;;
-		o) o=$OPTARG ;;
-		t) t=$OPTARG ;;
-		?) usage ; exit 0;;
-	 esac
+    case $OPTION in
+        b) b=$OPTARG ;;
+        r) r=$OPTARG ;;
+        u) u=$OPTARG ;;
+        d) d=$OPTARG ;;
+        e) e=$OPTARG ;;
+        o) o=$OPTARG ;;
+        t) t=$OPTARG ;;
+        ?) usage ; exit 0;;
+     esac
 done
 
 if [[ -z $t ]] || (([[ -z $b ]] || [[ -z $d ]]) && (([[ -z $r ]] || [[ -z $e ]]) && ([[ -z $u ]] || [[ -z $o ]])))
 then
-	usage ; exit 1	
+    usage ; exit 1    
 fi
 if [[ -z $e ]]
 then 
-	e="origin"
+    e="origin"
 fi
 if [[ -z $r ]]
 then
-	if [[ $u != $o ]]
-	then r="upstream"
-	else r="origin"
-	fi
+    if [[ $u != $o ]]
+    then r="upstream"
+    else r="origin"
+    fi
 fi
 # end arguments
 
 calldir="$PWD"
 
-init-repository "$t" "$r $u" "$e $o"
+init-repository "$t"
+init-remote $r $u
+init-remote $e $o
 
 merge-branches $r "$b" $e "$d"
 
