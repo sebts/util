@@ -96,17 +96,16 @@ clean-checkout()
     echo "# Checkout clean $remote/$branch"    
     remote-branch-exists $remote $branch true # exits if DNE
     git fetch $remote $branch:remotes/$remote/$branch
-    git checkout --force -B $branch --track $remote/$branch    
+    git checkout --force -B $branch --track $remote/$branch        
+    git clean -dff
+    git reset --hard
     
     if [[ $3 == true ]]
     then
         git submodule sync
         git submodule update --init --force --recursive
-        git submodule foreach --recursive 'git clean -d --force ; git reset --hard'
+        git submodule foreach --recursive 'git clean -dff ; git reset --hard'
     fi
-    
-    git clean -d --force
-    git reset --hard
 }
 
 # $1 IN/OUT. branch name, in <remote>/<branch> or <branch> format.
