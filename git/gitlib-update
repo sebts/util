@@ -45,22 +45,32 @@ then
 fi
 # end arguments
 
+# $1. work-tree to use
 update()
 {
-    init-repository "$t" "$d"
+    init-repository "$1" "$d"
     init-remote $r $u
     clean-checkout $r $b true
 }
 
 if  [[ ! -d $d ]] || [[ ! $(ls -A $d) ]]
 then #git dir dne or empty. Initialize directory with git.
-    echo "# Backup original to ${t}~"
-    mv ${t} ${t}~    
-    update    
-    echo "# Copy original on top of git clone in $t"
-    cp -r ${t}~/* ${t}    
-    echo "# Removing original backup"
+	echo "# Initializing into backup directory"
+	update "${t}~"
+	
+	echo "# Change worktree to ${t}"
+	git submodule foreach '
+		w=$(git config core.worktree)
+		git config core.worktree ${w/~\/$path/\/$path} # remove the ~ from the submodule worktree
+	'
+	git config core.worktree ${t}
+	
+	cd "$t"
+    echo "# Copy ${t}~ on top of ${t}"
+    cp --backup=none --remove-destination --recursive --target-directory=${t} ${t}~/*
+	
+    echo "# Removing backup directory"
     rm -r ${t}~
 fi
 
-update
+update "${t}"

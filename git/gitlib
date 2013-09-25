@@ -96,7 +96,7 @@ clean-checkout()
     echo "# Checkout clean $remote/$branch"    
     remote-branch-exists $remote $branch true # exits if DNE
     git fetch $remote $branch:remotes/$remote/$branch
-    git checkout --force -B $branch --track $remote/$branch        
+    git checkout --force -B $branch --track $remote/$branch
     git clean -dff
     git reset --hard
     
