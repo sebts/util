@@ -186,7 +186,6 @@ merge-branches()
 # Assumes superproject is already up-to-date
 update-submodules()
 {
-    local t="$PWD"
     git submodule sync
     git submodule update --init --remote --force
     
