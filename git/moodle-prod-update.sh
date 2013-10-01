@@ -1,6 +1,6 @@
 #!/bin/bash
 
-gitlib-update       -t /c/@/test/web \
-                    -d /c/@/test/git \
+gitlib-update       -t /usr/share/moodle \
+                    -d /var/lib/moodle.git \
                     -u https://github.com/sebts/moodle.git \
                     -b SEBTS_RELEASE

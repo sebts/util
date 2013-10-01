@@ -200,7 +200,7 @@ update-submodules()
         if [[ $? == 1 ]]
         then            
             git add $path
-            git commit -m "Updating $name to $sha1"
+            git commit -m "Updating $name" ## add commit info
         fi
     '
     git push
