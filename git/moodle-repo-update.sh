@@ -43,8 +43,8 @@ bash gitlib-merge -t $t/moodle \
                   -o https://github.com/sebts/moodle.git
 
 bash gitlib-merge -t $t/moodle \
-                  -b MOODLE_23_STABLE \
-                  -d SEBTS_23
+                  -b "MOODLE_23_STABLE  MOODLE_24_STABLE" \
+                  -d "SEBTS_23          SEBTS_24"
 
 bash gitlib-submodule -t $t/moodle \
                       -b SEBTS_23
