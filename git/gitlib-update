@@ -61,7 +61,7 @@ then #git dir dne or empty. Initialize directory with git.
 	echo "# Change worktree to ${t}"
 	git submodule foreach '
 		w=$(git config core.worktree)
-		git config core.worktree ${w/~\/$path/\/$path} # remove the ~ from the submodule worktree
+		git config core.worktree ${w%~\/$path}/$path # remove the ~ from the submodule worktree
 	'
 	git config core.worktree ${t}
 	
