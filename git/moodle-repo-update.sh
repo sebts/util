@@ -33,7 +33,7 @@ bash gitlib-merge -t $t/moodle-mod_turnitintool \
 # moodle-mod_questionnaire
 bash gitlib-merge -t $t/moodle-mod_questionnaire \
                   -u https://github.com/remotelearner/moodle-mod_questionnaire.git \
-                  -b "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE" \
+                  -b "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE MOODLE_26_STABLE" \
                   -o https://github.com/sebts/moodle-mod_questionnaire.git 
 
 bash gitlib-merge -t $t/moodle-mod_questionnaire \
@@ -43,7 +43,7 @@ bash gitlib-merge -t $t/moodle-mod_questionnaire \
 # moodle
 bash gitlib-merge -t $t/moodle \
                   -u https://github.com/moodle/moodle.git    \
-                  -b "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE" \
+                  -b "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE MOODLE_26_STABLE" \
                   -o https://github.com/sebts/moodle.git
 
 
