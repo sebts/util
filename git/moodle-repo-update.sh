@@ -15,10 +15,6 @@ bash gitlib-merge -t $t/moodle-theme_zebra \
 
 bash gitlib-merge -t $t/moodle-theme_zebra \
                   -b master \
-                  -d SEBTS_23
-
-bash gitlib-merge -t $t/moodle-theme_zebra \
-                  -b master \
                   -d SEBTS
 
 # moodle-mod_turnitintool
@@ -33,37 +29,31 @@ bash gitlib-merge -t $t/moodle-mod_turnitintool \
 # moodle-mod_questionnaire
 bash gitlib-merge -t $t/moodle-mod_questionnaire \
                   -u https://github.com/remotelearner/moodle-mod_questionnaire.git \
-                  -b "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE MOODLE_26_STABLE" \
+                  -b "MOODLE_25_STABLE MOODLE_26_STABLE" \
                   -o https://github.com/sebts/moodle-mod_questionnaire.git 
 
 bash gitlib-merge -t $t/moodle-mod_questionnaire \
-                  -b "MOODLE_23_STABLE  MOODLE_24_STABLE  MOODLE_25_STABLE" \
-                  -d "SEBTS_23          SEBTS_24          SEBTS_25"
+                  -b "MOODLE_25_STABLE  MOODLE_26_STABLE" \
+                  -d "SEBTS_25          SEBTS_26"
 
 # moodle
 bash gitlib-merge -t $t/moodle \
                   -u https://github.com/moodle/moodle.git    \
-                  -b "MOODLE_23_STABLE MOODLE_24_STABLE MOODLE_25_STABLE MOODLE_26_STABLE" \
+                  -b "MOODLE_25_STABLE MOODLE_26_STABLE" \
                   -o https://github.com/sebts/moodle.git
 
-
-# merge moodle core into sebts branches
+# merge 2.5
 bash gitlib-merge -t $t/moodle \
-                  -b "MOODLE_23_STABLE  MOODLE_24_STABLE  MOODLE_25_STABLE" \
-                  -d "SEBTS_23          SEBTS_24          SEBTS_25"
+                  -b "MOODLE_25_STABLE" \
+                  -d "SEBTS_25"
 
-# update plugins/submodules
-bash gitlib-submodule -t $t/moodle \
-                      -b SEBTS_23
-					  
-bash gitlib-submodule -t $t/moodle \
-                      -b SEBTS_24
-					  
 bash gitlib-submodule -t $t/moodle \
                       -b SEBTS_25
-					  
-# merge current version into release branch
-# Don't do this past 23. for future versions, have production point to the version branch (SEBTS_24)
+
+# merge 2.6
 bash gitlib-merge -t $t/moodle \
-                  -b "SEBTS_23" \
-                  -d "SEBTS_RELEASE"
+                  -b "MOODLE_26_STABLE" \
+                  -d "SEBTS_26"
+
+bash gitlib-submodule -t $t/moodle \
+                      -b SEBTS_26
