@@ -148,7 +148,7 @@ merge-branch()
     then # destination exists. checkout destination.
         clean-checkout $dr $db
         echo "# Merge from $sr/$sb"
-        git pull $sr $sb
+        git pull --ff $sr $sb
     else # destination branch does not exist. checkout source
         clean-checkout $sr $sb
     fi
@@ -186,8 +186,7 @@ merge-branches()
 # Assumes superproject is already up-to-date
 update-submodules()
 {
-    git submodule sync
-    git submodule update --init --remote --force
+    git submodule update --init --remote
     
     # uncouth, but works.
     git submodule foreach '
@@ -204,4 +203,6 @@ update-submodules()
         fi
     '
     git push
+
+    git submodule deinit --force .
 }
