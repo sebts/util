@@ -29,7 +29,7 @@ bash gitlib-merge -t $t/moodle-mod_turnitintool \
 # moodle-mod_questionnaire
 bash gitlib-merge -t $t/moodle-mod_questionnaire \
                   -u https://github.com/remotelearner/moodle-mod_questionnaire.git \
-                  -b "MOODLE_25_STABLE MOODLE_26_STABLE" \
+                  -b "MOODLE_25_STABLE MOODLE_26_STABLE master" \
                   -o https://github.com/sebts/moodle-mod_questionnaire.git 
 
 bash gitlib-merge -t $t/moodle-mod_questionnaire \
@@ -39,7 +39,7 @@ bash gitlib-merge -t $t/moodle-mod_questionnaire \
 # moodle
 bash gitlib-merge -t $t/moodle \
                   -u https://github.com/moodle/moodle.git    \
-                  -b "MOODLE_25_STABLE MOODLE_26_STABLE" \
+                  -b "MOODLE_25_STABLE MOODLE_26_STABLE master" \
                   -o https://github.com/sebts/moodle.git
 
 # merge 2.5
@@ -53,7 +53,7 @@ bash gitlib-submodule -t $t/moodle \
 # merge 2.6
 bash gitlib-merge -t $t/moodle \
                   -b "MOODLE_26_STABLE" \
-                  -d "SEBTS_26"
+                  -d "SEBTS_26_DEV"
 
 bash gitlib-submodule -t $t/moodle \
-                      -b SEBTS_26
+                      -b SEBTS_26_DEV
