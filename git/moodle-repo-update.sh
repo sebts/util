@@ -45,10 +45,10 @@ bash gitlib-merge -t $t/moodle \
 # merge 2.5
 bash gitlib-merge -t $t/moodle \
                   -b "MOODLE_25_STABLE" \
-                  -d "SEBTS_25"
+                  -d "SEBTS_25_DEV"
 
 bash gitlib-submodule -t $t/moodle \
-                      -b SEBTS_25
+                      -b SEBTS_25_DEV
 
 # merge 2.6
 bash gitlib-merge -t $t/moodle \
