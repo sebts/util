@@ -50,24 +50,24 @@ fi
 # end arguments
 
 if  [[ -d $t ]] # if moodle exists, put it in maintenance mode
-	cd $t
-
+then
 	# Moodle maintenance mode
 	if [[ $w > 0 ]]
+	then
 		# warn users prior to maintenance
-		sudo -u $s /usr/bin/php admin/cli/maintenance.php --enablelater=$w 
-		sleep $w * 60 # wait for maintenance window
+		sudo -u $s /usr/bin/php $t/admin/cli/maintenance.php --enablelater=${w} 
+		sleep ${w}m # wait for maintenance window
 	fi
 	# always force maintenance in case timing is off
-	sudo -u $s /usr/bin/php admin/cli/maintenance.php --enable
+	sudo -u $s /usr/bin/php $t/admin/cli/maintenance.php --enable
 fi
 
 # Update from git
 bash gitlib-update  -t $t -d $d -u $u -b $b
 
 # Upgrade moodle database
-[[ $i ]] && uparg="--interactive" || uparg="--non-interactive"
-sudo -u $s /usr/bin/php admin/cli/upgrade.php $uparg
+[[ $i ]] || uparg="--non-interactive"
+sudo -u $s /usr/bin/php $t/admin/cli/upgrade.php $uparg
 
 # All done
-sudo -u $s /usr/bin/php admin/cli/maintenance.php --disable # re-open
+sudo -u $s /usr/bin/php $t/admin/cli/maintenance.php --disable # re-open
