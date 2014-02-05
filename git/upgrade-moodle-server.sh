@@ -30,7 +30,7 @@ EOF
 }
 
 # begin arguments
-while getopts "b:t:d:u:w:i" OPTION
+while getopts "b:t:d:u:w:i:s:" OPTION
 do
     case $OPTION in
         b) b=$OPTARG ;;
@@ -39,11 +39,12 @@ do
         u) u=$OPTARG ;;
         w) w=$OPTARG ;;
         i) i=$OPTARG ;;
+        s) s=$OPTARG ;;
         ?) usage ; exit ;;
      esac
 done
 
-if [[ -z $t ]] || [[ -z $d ]] || [[ -z $u ]] || [[ -z $b ]]
+if [[ -z $t ]] || [[ -z $d ]] || [[ -z $u ]] || [[ -z $b ]] || [[ -z $s ]]
 then
     usage ; exit 1;
 fi
