@@ -53,7 +53,7 @@ then
 fi
 # end arguments
 
-if [[ $m ]] && [[ -d $t ]] # if moodle exists, put it in maintenance mode
+if [[ $m == true ]] && [[ -d $t ]] # if moodle exists, put it in maintenance mode
 then
 	# Moodle maintenance mode
 	if [[ $w > 0 ]]
@@ -71,12 +71,7 @@ bash gitlib-update  -t $t -d $d -u $u -b $b
 
 # Always upgrade moodle database. Even if we didn't put moodle in maintenance mode
 # it's better to run the upgrade script while moodle is running than to accidentally *need* to run it, but fail to.
-[[ $i ]] || uparg="--non-interactive"
+[[ $i == true ]] || uparg="--non-interactive"
 sudo -u $s /usr/bin/php $t/admin/cli/upgrade.php $uparg
+sudo -u $s /usr/bin/php $t/admin/cli/maintenance.php --disable # re-open
 
-
-if [[ $m ]]
-then
-	# All done
-	sudo -u $s /usr/bin/php $t/admin/cli/maintenance.php --disable # re-open
-fi
