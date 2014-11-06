@@ -17,7 +17,7 @@ $0 $*
 This script will update a moodle installation via using git.
 
 OPTIONS:
-  
+
   $0 -b <branch> [-t <path>] [-d <path>] [-u <url>] [-m <bool> [-w <int>] [-i <bool>] [-s <user>]
 
   -b Sets the branch name to pull from git.
@@ -53,25 +53,39 @@ then
 fi
 # end arguments
 
-if [[ $m == true ]] && [[ -d $t ]] # if moodle exists, put it in maintenance mode
+if [[ -d $t ]] # if moodle dir exists
 then
-	# Moodle maintenance mode
-	if [[ $w > 0 ]]
-	then
-		# warn users prior to maintenance
-		sudo -u $s /usr/bin/php $t/admin/cli/maintenance.php --enablelater=${w} 
-		sleep ${w}m # wait for maintenance window
-	fi
-	# always force maintenance in case timing is off
-	sudo -u $s /usr/bin/php $t/admin/cli/maintenance.php --enable
+
+    calldir="$PWD"
+    cd "$t"
+    git fetch origin
+    if [[ $(git rev-parse HEAD) == $(git rev-parse @{u}) ]] &&
+       [[ -z $(git status --porcelain) ]]
+        then
+        echo "Everything is up-to-date. Thank you and good night."
+        exit 0;
+    fi
+    cd "$calldir"
+
+    if [[ $m == true ]]
+    then
+    	# Moodle maintenance mode
+    	if [[ $w > 0 ]]
+    	then
+    		# warn users prior to maintenance
+    		sudo -u $s /usr/bin/php $t/admin/cli/maintenance.php --enablelater=${w}
+    		sleep ${w}m # wait for maintenance window
+    	fi
+    	# always force maintenance in case timing is off
+    	sudo -u $s /usr/bin/php $t/admin/cli/maintenance.php --enable
+    fi
 fi
 
 # Update from git
-bash gitlib-update  -t $t -d $d -u $u -b $b
+bash gitlib-update -t $t -d $d -u $u -b $b
 
 # Always upgrade moodle database. Even if we didn't put moodle in maintenance mode
 # it's better to run the upgrade script while moodle is running than to accidentally *need* to run it, but fail to.
 [[ $i == true ]] || uparg="--non-interactive"
 sudo -u $s /usr/bin/php $t/admin/cli/upgrade.php $uparg
 sudo -u $s /usr/bin/php $t/admin/cli/maintenance.php --disable # re-open
-
